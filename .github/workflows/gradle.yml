@@ -1,9 +1,13 @@
 name: Java CI with Gradle
 
 on:
+  push:
+    branches: [ "main" ]
   pull_request:
-    types: [closed]
-    branches: ["main", "develop"]
+    branches: [ "main" ]
+  # pull_request:
+  #   types: [closed]
+  #   branches: ["main", "develop"]
 
 permissions:
   contents: read
@@ -16,8 +20,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+        # with:
+        #   ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: docker build & docker hub push
         run: |
@@ -25,7 +29,8 @@ jobs:
           docker build -t "${{ secrets.DOCKER_USERNAME }}/member-service:${{ github.run_number }}" .
           docker push "${{ secrets.DOCKER_USERNAME }}/member-service:${{ github.run_number }}"
 
-  Deploy-Dev:
+  Deploy:
+  # Deploy-Dev:
     needs: CI-CD
     if: github.event_name == 'push'
     # if: github.event.pull_request.base.ref == 'develop'
