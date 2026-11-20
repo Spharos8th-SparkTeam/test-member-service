@@ -2,6 +2,7 @@ package com.example.spring.test.security.config;
 
 import com.example.spring.test.security.jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.env.Environment;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,6 +25,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    private final Environment environment;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -39,20 +41,24 @@ public class SecurityConfig {
                                 .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                                 .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
-                .authorizeHttpRequests(auth -> auth
+                .authorizeHttpRequests(auth -> {
+                    auth
 //                        .requestMatchers(HttpMethod.GET, "/product/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/product/**").permitAll()
-                        .requestMatchers(
-                                "/auth/**",
-                                "/error",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/v3/api-docs",
-                                "/v3/api-docs/**",
-                                "/v3/api-docs.yaml"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                            .requestMatchers(HttpMethod.GET, "/product/**").permitAll()
+                            .requestMatchers(
+                                    "/auth/**",
+                                    "/error",
+                                    "/swagger-ui/**",
+                                    "/swagger-ui.html",
+                                    "/v3/api-docs",
+                                    "/v3/api-docs/**",
+                                    "/v3/api-docs.yaml"
+                            ).permitAll();
+                    if (environment.matchesProfiles("dev")) {
+                        auth.requestMatchers(HttpMethod.POST, "/api/test/kafka").permitAll();
+                    }
+                    auth.anyRequest().authenticated();
+                })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         ;
 
