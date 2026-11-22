@@ -29,11 +29,10 @@ jobs:
           docker build -t "${{ secrets.DOCKER_USERNAME }}/member-service:${{ github.run_number }}" .
           docker push "${{ secrets.DOCKER_USERNAME }}/member-service:${{ github.run_number }}"
 
-  Deploy:
-  # Deploy-Dev:
+  Deploy-Dev:
     needs: CI-CD
-    if: github.event_name == 'push'
-    # if: github.event.pull_request.base.ref == 'develop'
+    # if: github.event_name == 'push'
+    if: github.event.pull_request.base.ref == 'develop'
     runs-on: [self-hosted, Windows, X64]
 
     steps:
@@ -107,3 +106,62 @@ jobs:
 
           $running = docker inspect -f "{{.State.Running}}" member-service
           if ($LASTEXITCODE -ne 0 -or $running -ne "true") { exit 1 }
+
+
+  Deploy-Prod:
+    needs: CI-CD
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy Member Service to AWS
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          IMAGE_TAG: ${{ github.run_number }}
+          SPRING_DATASOURCE_URL: ${{ secrets.DB_URL_PROD }}
+          SPRING_DATASOURCE_USERNAME: ${{ secrets.DB_USERNAME_PROD }}
+          SPRING_DATASOURCE_PASSWORD: ${{ secrets.DB_PASSWORD_PROD }}
+
+        with:
+          host: ${{ secrets.HOST_EC2 }}
+          username: ubuntu
+          key: ${{ secrets.EC2_KEY }}
+          port: 22
+          envs: DOCKER_USERNAME,DOCKER_PASSWORD,IMAGE_TAG,SPRING_DATASOURCE_URL,SPRING_DATASOURCE_USERNAME,SPRING_DATASOURCE_PASSWORD
+
+          script: |
+            set -eu
+
+            IMAGE="$DOCKER_USERNAME/member-service:$IMAGE_TAG"
+
+            : "${SPRING_DATASOURCE_URL:?DB URL missing}"
+            : "${SPRING_DATASOURCE_USERNAME:?DB username missing}"
+            : "${SPRING_DATASOURCE_PASSWORD:?DB password missing}"
+
+            echo "$DOCKER_PASSWORD" | docker login \
+              -u "$DOCKER_USERNAME" \
+              --password-stdin
+
+            docker pull "$IMAGE"
+
+            docker network inspect spharos >/dev/null 2>&1 \
+              || docker network create spharos
+
+            docker rm -f member-service 2>/dev/null || true
+
+            docker run -d \
+              --name member-service \
+              --restart unless-stopped \
+              --network spharos \
+              -e SPRING_DATASOURCE_URL \
+              -e SPRING_DATASOURCE_USERNAME \
+              -e SPRING_DATASOURCE_PASSWORD \
+              -e SPRING_PROFILES_ACTIVE=prod \
+              "$IMAGE"
+
+            test "$(docker inspect -f '{{.State.Running}}' member-service)" = true
+
+            docker ps --filter "name=^/member-service$"
+            docker logs --tail 50 member-service
