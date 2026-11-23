@@ -27,7 +27,7 @@ public class TestController {
 
     @GetMapping("/test")
     public String test() {
-        return "정상 실행";
+        return "정상 실행!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
     }
 
     @GetMapping
