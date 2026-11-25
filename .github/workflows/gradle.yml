@@ -31,8 +31,8 @@ jobs:
 
   Deploy-Dev:
     needs: CI-CD
-    # if: github.event_name == 'push'
-    if: github.event.pull_request.base.ref == 'develop'
+    if: github.event_name == 'push'
+    # if: github.event.pull_request.base.ref == 'develop'
     runs-on: [self-hosted, Windows, X64]
 
     steps:

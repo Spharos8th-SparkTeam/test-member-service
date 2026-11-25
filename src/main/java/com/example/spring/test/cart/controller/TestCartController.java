@@ -1,6 +1,5 @@
 package com.example.spring.test.cart.controller;
 
-import com.example.spring.test.cart.entity.Cart;
 import com.example.spring.test.cart.request.CreateCartRequest;
 import com.example.spring.test.cart.service.CartService;
 import com.example.spring.test.product.response.ProductResponse;
@@ -16,7 +15,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/cart")
-public class CartController {
+public class TestCartController {
 
     private final CartService cartService;
 
