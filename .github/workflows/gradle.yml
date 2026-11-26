@@ -1,27 +1,27 @@
 name: Java CI with Gradle 
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  # push:
+  #   branches: [ "main" ]
   # pull_request:
-  #   types: [closed]
-  #   branches: ["main", "develop"]
+  #   branches: [ "main" ]
+  pull_request:
+    types: [closed]
+    branches: ["main", "develop"]
 
 permissions:
   contents: read
 
 jobs:
   CI-CD:
-    if: github.event_name == 'push'
-    # if: github.event.pull_request.merged == true
+    # if: github.event_name == 'push'
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-        # with:
-        #   ref: ${{ github.event.pull_request.merge_commit_sha }}
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: docker build & docker hub push
         run: |
@@ -110,8 +110,8 @@ jobs:
 
   Deploy-Prod:
     needs: CI-CD
-    if: github.ref_name == 'main'
-    # if: github.event.pull_request.base.ref == 'main'
+    # if: github.ref_name == 'main'
+    if: github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
 
     steps:
